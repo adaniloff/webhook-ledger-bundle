@@ -60,6 +60,9 @@ jobs:
           key: composer-${{ matrix.symfony-version }}-${{ hashFiles('composer.json') }}
           restore-keys: composer-${{ matrix.symfony-version }}-
 
+      - name: Generate lock file
+        run: composer update --no-interaction --prefer-dist --no-progress
+
       - name: Install dependencies (Symfony ${{ matrix.symfony-version }})
         run: |
           composer update \
