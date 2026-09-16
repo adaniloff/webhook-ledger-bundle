@@ -14,7 +14,13 @@ Idempotent webhook reception with transactional outbox, retries and replay, buil
 composer require webhook-ledger/webhook-ledger-bundle
 ```
 
-The bundle registers itself automatically (`config/bundles.php`) and exposes:
+You need to register the bundle yourself in `config/bundles.php`:
+
+```php
+WebhookLedger\WebhookLedgerBundle::class => ['all' => true],
+```
+
+It then exposes:
 
 - a `POST /webhook/{source}` route (webhook reception);
 - a `bin/console webhook-ledger:replay {uuid} {version}` console command (manual replay).
