@@ -9,6 +9,7 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigura
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 use WebhookLedger\Domain\Contract\SourceAdapterInterface;
+use WebhookLedger\Infrastructure\DependencyInjection\Compiler\EnforceOutboxConnectionPass;
 
 final class WebhookLedgerBundle extends AbstractBundle
 {
@@ -21,6 +22,13 @@ final class WebhookLedgerBundle extends AbstractBundle
 
         $builder->registerForAutoconfiguration(SourceAdapterInterface::class)
             ->addTag('webhook_ledger.source_adapter');
+    }
+
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
+
+        $container->addCompilerPass(new EnforceOutboxConnectionPass());
     }
 
     public function configureRoutes(RoutingConfigurator $routes): void
