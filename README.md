@@ -1,6 +1,21 @@
 # Webhook Ledger Bundle
 
+[![PHP](https://img.shields.io/badge/PHP-8.2%2B-777bb4)](https://www.php.net/)
+[![Symfony](https://img.shields.io/badge/Symfony-%5E7.0%20%7C%7C%20%5E8.0-000000)](https://symfony.com/)
+[![Doctrine ORM](https://img.shields.io/badge/Doctrine%20ORM-%5E3.0-fc6a31)](https://www.doctrine-project.org/)
+
 Idempotent webhook reception with transactional outbox, retries and replay, built on Doctrine and Symfony Messenger.
+
+## Table of contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+  - [Declaring a webhook provider](#declaring-a-webhook-provider)
+  - [Doctrine mapping](#doctrine-mapping)
+  - [Migration](#migration)
+- [Guarantees](#guarantees)
+- [Decisions](#decisions)
+- [Architecture](#architecture)
 
 ## Requirements
 
@@ -25,10 +40,10 @@ It then exposes:
 - a `POST /wl/webhook/{source}` route (webhook reception);
 - a `bin/console webhook-ledger:replay {uuid} {version}` console command (manual replay).
 
-This bundle provides an application service `Receiver::replay()`, which you can call 
+This bundle provides an application service `Receiver::replay()`, which you can call
 if you want to use the *replay* feature your own way.
 
-*Note that you can easily reuse the command behavior with 
+*Note that you can easily reuse the command behavior with
 [Symfony's command in controller](https://symfony.com/doc/current/console/command_in_controller.html)*.
 
 ### Declaring a webhook provider
@@ -52,13 +67,14 @@ Be aware that **this is what guarantees the transactional outbox**!
 
 ### Migration
 
-The Doctrine transport **must** run with `auto_setup=0` (see `MESSENGER_TRANSPORT_DSN` and the `failed` transport in `config/packages/messenger.yaml`).
+> **Important:** the Doctrine transport **must** run with `auto_setup=0` (see `MESSENGER_TRANSPORT_DSN` and the `failed` transport in `config/packages/messenger.yaml`).
+>
+> Letting Messenger create the `messenger_messages` table on its own (default behavior, on the first dispatched message) means an implicit DDL statement **could break the atomicity** guarantee made by this package (depending on your DB engine).
 
--> letting Messenger create the `messenger_messages` table on its own (default behavior, on the first dispatched message) means an implicit DDL statement **could break the atomicity** guarantee made by this package (depending on your DB engine).
+The `messenger_messages` table must be created upfront, through a regular migration, **before** the endpoint receives its first webhook.
 
-The `messenger_messages` table must be created upfront, through a regular migration, **before** the endpoint receives its first webhook. 
-
-Below is a migration that I used for [my live instance demo project](https://github.com/adaniloff/webhook-ledger):
+<details>
+<summary>Migration example (used for <a href="https://github.com/adaniloff/webhook-ledger">my live instance demo project</a>)</summary>
 
 ```php
 final class Version20260907204611 extends AbstractMigration
@@ -91,6 +107,8 @@ EOF);
 }
 ```
 
+</details>
+
 ## Guarantees
 
 - **Idempotence**: unique constraint `(source, external_event_id)`, a violation triggers a `WebhookEntryDuplicationException`.
@@ -101,13 +119,13 @@ EOF);
 
 - **Raw DBAL `INSERT` for the ledger write (not the ORM).** Catching
 `UniqueConstraintViolationException` through Doctrine's `EntityManager` closes it, which forces
-rebuilding it mid-HTTP-request just to keep going. A simple DBAL `INSERT`, catch the violation, 
+rebuilding it mid-HTTP-request just to keep going. A simple DBAL `INSERT`, catch the violation,
 respond `202` either way. Deduplication is enforced by a unique index on `(source, external_event_id)`.
 
 - **No home-grown poller reading the ledger.** The default design is often a worker doing
 `SELECT ... WHERE status='received' ... FOR UPDATE SKIP LOCKED`. What's built here: `Receiver`
 writes the ledger row *and* dispatches the `ProcessWebhookEvent` message **in the same DBAL
-transaction**. 
+transaction**.
 
     Symfony's Doctrine Messenger transport (`messenger_messages`) plays the role of the
     outbox - it already has its own `SKIP LOCKED`-style concurrent consumption, retry strategy and
@@ -134,7 +152,7 @@ Presentation/     # HTTP controller, console command
 
 The business handler (what happens when the webhook is processed) is up to you to implement.
 
-**Special warning:** since the *Transactional Outbox* pattern is an `at-least-once` strategy, your business handler **SHOULD BE idempotent**, otherwise you will end up with unexpected behavior.
+> **Special warning:** since the *Transactional Outbox* pattern is an `at-least-once` strategy, your business handler **SHOULD BE idempotent**, otherwise you will end up with unexpected behavior.
 
 See this article for more information:
 - [french version](https://adaniloff.dev/fr/articles/webhooks-5xx/)
