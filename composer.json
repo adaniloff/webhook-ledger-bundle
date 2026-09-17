@@ -2,7 +2,26 @@
     "name": "webhook-ledger/webhook-ledger-bundle",
     "description": "Idempotent webhooks consumption with retries and replays, through transactional outbox, using Doctrine and Symfony messenger.",
     "type": "symfony-bundle",
-    "license": "proprietary",
+    "license": "MIT",
+    "keywords": [
+        "symfony-bundle",
+        "webhook",
+        "outbox",
+        "messenger",
+        "doctrine",
+        "idempotency"
+    ],
+    "authors": [
+        {
+            "name": "Aleksandr Daniloff",
+            "homepage": "https://github.com/adaniloff"
+        }
+    ],
+    "homepage": "https://github.com/adaniloff/webhook-ledger-bundle",
+    "support": {
+        "issues": "https://github.com/adaniloff/webhook-ledger-bundle/issues",
+        "source": "https://github.com/adaniloff/webhook-ledger-bundle"
+    },
     "require": {
         "php": ">=8.2",
         "doctrine/collections": "^2.2 || ^3.1",
