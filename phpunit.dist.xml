@@ -17,7 +17,7 @@
         <server name="SHELL_VERBOSITY" value="-1" />
         <server name="KERNEL_CLASS" value="WebhookLedger\Tests\Fixtures\Kernel" />
         <env name="DATABASE_URL" value="mysql://app:app@127.0.0.1:3306/webhook_ledger_bundle_test?serverVersion=10.11.0-MariaDB&amp;charset=utf8mb4" />
-        <env name="MESSENGER_TRANSPORT_DSN" value="doctrine://default" />
+        <env name="MESSENGER_TRANSPORT_DSN" value="doctrine://default?auto_setup=0" />
     </php>
 
     <testsuites>
