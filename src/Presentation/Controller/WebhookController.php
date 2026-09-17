@@ -20,7 +20,7 @@ final class WebhookController extends AbstractController implements LoggerAwareI
 {
     use LoggerAwareTrait;
 
-    #[Route(path: '/webhook/{source}', name: 'webhook_hook', methods: ['POST'], format: 'json')]
+    #[Route(path: '/wl/webhook/{source}', name: 'webhook_hook', methods: ['POST'], format: 'json')]
     public function hook(
         string $source,
         Request $request,

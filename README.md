@@ -22,7 +22,7 @@ WebhookLedger\WebhookLedgerBundle::class => ['all' => true],
 
 It then exposes:
 
-- a `POST /webhook/{source}` route (webhook reception);
+- a `POST /wl/webhook/{source}` route (webhook reception);
 - a `bin/console webhook-ledger:replay {uuid} {version}` console command (manual replay).
 
 This bundle provides an application service `Receiver::replay()`, which you can call 
@@ -96,6 +96,30 @@ EOF);
 - **Idempotence**: unique constraint `(source, external_event_id)`, a violation triggers a `WebhookEntryDuplicationException`.
 - **Transactional outbox**: receiving a webhook generates both a `webhook_entry` and a `messenger_messages` row in an **atomic transaction**; they both succeed or fail. Then the combo `Symfony Messenger` + Doctrine Messenger transport acts as the relay.
 - **Controlled replay**: a webhook is only replayable if it is `DEAD` and its signature was valid (see `WebhookEntry::isReplayable()`), with optimistic-locking (a `WebhookOutdatedException` is thrown on a stale version).
+
+## Decisions
+
+- **Raw DBAL `INSERT` for the ledger write (not the ORM).** Catching
+`UniqueConstraintViolationException` through Doctrine's `EntityManager` closes it, which forces
+rebuilding it mid-HTTP-request just to keep going. A simple DBAL `INSERT`, catch the violation, 
+respond `202` either way. Deduplication is enforced by a unique index on `(source, external_event_id)`.
+
+- **No home-grown poller reading the ledger.** The default design is often a worker doing
+`SELECT ... WHERE status='received' ... FOR UPDATE SKIP LOCKED`. What's built here: `Receiver`
+writes the ledger row *and* dispatches the `ProcessWebhookEvent` message **in the same DBAL
+transaction**. 
+
+    Symfony's Doctrine Messenger transport (`messenger_messages`) plays the role of the
+    outbox - it already has its own `SKIP LOCKED`-style concurrent consumption, retry strategy and
+    `failure_transport`, so there was no reason to hand-roll it.
+
+- **Replay is restricted to `dead`, not `failed`.** A `failed` webhook already has an automatic
+retry scheduled by Symfony's Messenger component. Only `dead` - retries exhausted - is safe to replay.
+
+- **Optimistic locking on replay.** The `version` column (Doctrine `#[ORM\Version]`) guards the
+replay path: two simultaneous replay clicks on the same event, one succeeds, the other gets an
+`OptimisticLockException` translated into a clear rejection (`WebhookOutdatedException`) rather
+than a second dispatch.
 
 ## Architecture
 
