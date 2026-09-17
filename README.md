@@ -138,4 +138,4 @@ The business handler (what happens when the webhook is processed) is up to you t
 
 See this article for more information:
 - [french version](https://adaniloff.dev/fr/articles/webhooks-5xx/)
-- [english version](https://adaniloff.dev/en/articles/webhooks-5xx/) - not published yet, coming soon
+- [english version](https://adaniloff.dev/en/articles/webhooks-5xx/)
