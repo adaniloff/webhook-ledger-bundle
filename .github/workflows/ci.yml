@@ -39,7 +39,7 @@ jobs:
     env:
       APP_ENV: test
       DATABASE_URL: "mysql://app:app@127.0.0.1:3306/webhook_ledger_bundle_test?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
-      MESSENGER_TRANSPORT_DSN: "doctrine://default"
+      MESSENGER_TRANSPORT_DSN: "doctrine://default?auto_setup=0"
 
     steps:
       - name: Checkout
